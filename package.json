@@ -1,0 +1,45 @@
+{
+  "name": "vistars",
+  "version": "1.0.0",
+  "description": "SVG-based data visualization style avatars from any username and color palette. Works in both browsers and Node.js.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "umd": "./dist/index.umd.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "dev": "vite"
+  },
+  "keywords": [
+    "avatar",
+    "svg",
+    "dataviz",
+    "data-visualization",
+    "chart",
+    "vanilla",
+    "javascript",
+    "nodejs",
+    "browser"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.0.0"
+  }
+}
