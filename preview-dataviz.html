@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Data Viz Avatar Preview v2</title>
+<style>
+  body { font-family: -apple-system, sans-serif; padding: 40px; transition: background 0.3s, color 0.3s; }
+  body.dark { background: #111; color: #eee; }
+  body.light { background: #f5f5f5; color: #222; }
+  body.dark .style-section p { color: #666; }
+  body.light .style-section p { color: #999; }
+  body.dark .avatar-cell .name { color: #555; }
+  body.light .avatar-cell .name { color: #999; }
+  body.dark .palette-label { color: #555; }
+  body.light .palette-label { color: #aaa; }
+  body.dark p.sub { color: #888; }
+  body.light p.sub { color: #666; }
+  .header { display: flex; align-items: center; gap: 20px; margin-bottom: 4px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 22px; }
+  p.sub { margin-bottom: 32px; font-size: 14px; }
+  .controls { display: flex; align-items: center; gap: 16px; }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .toggle-wrap span { font-size: 12px; opacity: 0.5; }
+  .toggle-track { width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background 0.3s; }
+  body.dark .toggle-track { background: #334; }
+  body.light .toggle-track { background: #ccc; }
+  .toggle-thumb { width: 20px; height: 20px; border-radius: 50%; position: absolute; top: 2px; transition: left 0.2s, background 0.2s; }
+  body.dark .toggle-thumb { left: 2px; background: #8b8bff; }
+  body.light .toggle-thumb { left: 22px; background: #f59e0b; }
+  .shape-toggle { display: flex; border-radius: 8px; overflow: hidden; }
+  body.dark .shape-toggle { border: 1px solid #333; }
+  body.light .shape-toggle { border: 1px solid #ddd; }
+  .shape-btn { padding: 4px 12px; font-size: 12px; cursor: pointer; border: none; background: transparent; transition: background 0.2s, color 0.2s; display: flex; align-items: center; gap: 5px; }
+  body.dark .shape-btn { color: #888; }
+  body.light .shape-btn { color: #999; }
+  body.dark .shape-btn.active { background: #2a2a4a; color: #eee; }
+  body.light .shape-btn.active { background: #e2e2e2; color: #222; }
+  .shape-icon { display: inline-block; width: 14px; height: 14px; border: 1.5px solid currentColor; }
+  .shape-icon.circle { border-radius: 50%; }
+  .shape-icon.rounded { border-radius: 3px; }
+  .style-section { margin-bottom: 40px; }
+  .style-section h2 { margin-bottom: 2px; font-size: 16px; }
+  .style-section p { font-size: 12px; margin-bottom: 10px; }
+  .avatar-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .avatar-cell { text-align: center; }
+  .avatar-cell svg { border-radius: 50%; transition: border-radius 0.25s ease; }
+  .avatar-cell svg.shape-square { border-radius: 16%; }
+  .palette-label { font-size: 11px; margin-bottom: 4px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Data Visualization Style Avatars v2</h1>
+  <div class="controls">
+    <div class="toggle-wrap" id="themeToggle" title="Toggle page background">
+      <span>Dark</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span>Light</span>
+    </div>
+    <div class="shape-toggle" id="shapeToggle">
+      <button class="shape-btn active" data-shape="circle" title="Circle"><span class="shape-icon circle"></span>Circle</button>
+      <button class="shape-btn" data-shape="square" title="Rounded square"><span class="shape-icon rounded"></span>Square</button>
+    </div>
+  </div>
+</div>
+<p class="sub">Neutral background + palette-driven chart elements + subtle decorations</p>
+<div id="app"></div>
+
+<script>
+// --- Utilities ---
+function hashCode(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+function getDigit(number, ntn) { return Math.floor((number / Math.pow(10, ntn)) % 10); }
+function getUnit(number, range, index) {
+  let value = number % range;
+  if (index && getDigit(number, index) % 2 === 0) value = -value;
+  return value;
+}
+function getBoolean(number, ntn) { return getDigit(number, ntn) % 2 === 0; }
+function getRandomColor(number, colors, range) { return colors[number % range]; }
+
+// Derive a neutral dark bg from palette: blend colors[0] with deep navy
+function makeBg(colors, isLight) {
+  if (isLight) return '#f1f5f9';
+  return '#141824';
+}
+
+const NAMES = ['Alice Johnson', 'Bob Smith', 'Charlie Wu', 'Diana Lee', 'Ethan Park', 'Fiona Chen', 'George Wang', 'Hannah Kim'];
+
+const PALETTES = {
+  ocean:  { label: 'Ocean',   colors: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'] },
+  forest: { label: 'Forest',  colors: ['#22c55e', '#14b8a6', '#a3e635', '#f97316', '#e879f9'] },
+  sunset: { label: 'Sunset',  colors: ['#f97316', '#ef4444', '#eab308', '#a855f7', '#06b6d4'] },
+  mono:   { label: 'Mono',    colors: ['#94a3b8', '#64748b', '#cbd5e1', '#475569', '#e2e8f0'] },
+};
+
+// --- 1. Bar Chart ---
+function generateBarChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const barCount = 7;
+  const pad = 10;
+  const gap = 3;
+  const barW = (SIZE - pad * 2 - gap * (barCount - 1)) / barCount;
+  const maxH = SIZE - pad * 2 - 8;
+  const baseY = SIZE - pad - 2;
+
+  let svg = '';
+  // subtle grid
+  for (let i = 0; i <= 3; i++) {
+    const y = pad + 4 + (maxH / 3) * i;
+    svg += `<line x1="${pad}" y1="${y}" x2="${SIZE - pad}" y2="${y}" stroke="rgba(${fg},0.06)" stroke-width="0.5"/>`;
+  }
+  // baseline
+  svg += `<line x1="${pad}" y1="${baseY}" x2="${SIZE - pad}" y2="${baseY}" stroke="rgba(${fg},0.12)" stroke-width="0.5"/>`;
+
+  for (let i = 0; i < barCount; i++) {
+    const ratio = 0.2 + (getUnit(num + i * 37, 80, i) + 80) / 100 * 0.7;
+    const h = maxH * Math.min(Math.max(ratio, 0.12), 1);
+    const x = pad + i * (barW + gap);
+    const y = baseY - h;
+    const color = colors[(num + i * 3) % range];
+    const opacity = 0.55 + (i / barCount) * 0.4;
+    svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(barW / 2, 2.5)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`;
+    // subtle glow on top
+    svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="3" rx="${Math.min(barW / 2, 2.5)}" fill="${color}" opacity="0.9"/>`;
+  }
+
+  // tiny axis tick marks
+  svg += `<line x1="${pad}" y1="${baseY}" x2="${pad}" y2="${baseY - 3}" stroke="rgba(${fg},0.2)" stroke-width="0.5"/>`;
+  svg += `<line x1="${SIZE - pad}" y1="${baseY}" x2="${SIZE - pad}" y2="${baseY - 3}" stroke="rgba(${fg},0.2)" stroke-width="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 2. Donut Chart ---
+function generateDonutChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R = 30, strokeW = 9;
+  const segments = 4;
+
+  const raw = [];
+  let total = 0;
+  for (let i = 0; i < segments; i++) {
+    const v = 15 + (getUnit(num + i * 53, 85, i) + 85);
+    raw.push(v); total += v;
+  }
+
+  const C = 2 * Math.PI * R;
+  let offset = 0;
+  let svg = '';
+
+  // background ring
+  svg += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(${fg},0.06)" stroke-width="${strokeW}"/>`;
+
+  for (let i = 0; i < segments; i++) {
+    const frac = raw[i] / total;
+    const dash = C * frac * 0.88;
+    const color = colors[(num + i * 7) % range];
+    svg += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-offset / total * C).toFixed(1)}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})" opacity="0.85"/>`;
+    offset += raw[i];
+  }
+
+  // center: subtle ring + text
+  svg += `<circle cx="${cx}" cy="${cy}" r="${R - strokeW / 2 - 3}" fill="none" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+  const pct = Math.round((raw[0] / total) * 100);
+  svg += `<text x="${cx}" y="${cy + 1.5}" text-anchor="middle" dominant-baseline="middle" fill="rgba(${fg},0.5)" font-size="9" font-weight="600" font-family="ui-monospace,monospace">${pct}%</text>`;
+
+  // outer tick dots
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const dx = cx + Math.cos(a) * (R + strokeW / 2 + 3);
+    const dy = cy + Math.sin(a) * (R + strokeW / 2 + 3);
+    svg += `<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="0.8" fill="rgba(${fg},0.15)"/>`;
+  }
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 3. Radar Chart ---
+function generateRadarChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const maxR = 28;
+  const axes = 5;
+
+  const pts = [];
+  for (let i = 0; i < axes; i++) {
+    const r = 0.3 + (getUnit(num + i * 41, 70, i) + 70) / 100 * 0.7;
+    pts.push(Math.min(Math.max(r, 0.25), 1));
+  }
+
+  let svg = '';
+
+  // grid rings
+  for (let ring = 1; ring <= 3; ring++) {
+    const r = (maxR / 3) * ring;
+    let d = '';
+    for (let i = 0; i < axes; i++) {
+      const a = (i / axes) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      d += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+    }
+    d += 'Z';
+    svg += `<path d="${d}" stroke="rgba(${fg},0.07)" stroke-width="0.5" fill="none"/>`;
+  }
+
+  // axis lines
+  for (let i = 0; i < axes; i++) {
+    const a = (i / axes) * Math.PI * 2 - Math.PI / 2;
+    svg += `<line x1="${cx}" y1="${cy}" x2="${(cx + Math.cos(a) * maxR).toFixed(1)}" y2="${(cy + Math.sin(a) * maxR).toFixed(1)}" stroke="rgba(${fg},0.06)" stroke-width="0.5"/>`;
+  }
+
+  // data fill
+  const fillColor = colors[num % range];
+  const strokeColor = colors[(num + 2) % range];
+  let d = '';
+  for (let i = 0; i < axes; i++) {
+    const a = (i / axes) * Math.PI * 2 - Math.PI / 2;
+    const r = maxR * pts[i];
+    d += (i === 0 ? 'M' : 'L') + `${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)} `;
+  }
+  d += 'Z';
+  svg += `<path d="${d}" fill="${fillColor}" fill-opacity="0.2" stroke="${strokeColor}" stroke-width="1.5" stroke-linejoin="round"/>`;
+
+  // vertex dots
+  for (let i = 0; i < axes; i++) {
+    const a = (i / axes) * Math.PI * 2 - Math.PI / 2;
+    const r = maxR * pts[i];
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${bg}"/>`;
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="${strokeColor}" opacity="0.9"/>`;
+  }
+
+  // axis-end dots (tiny)
+  for (let i = 0; i < axes; i++) {
+    const a = (i / axes) * Math.PI * 2 - Math.PI / 2;
+    svg += `<circle cx="${(cx + Math.cos(a) * maxR).toFixed(1)}" cy="${(cy + Math.sin(a) * maxR).toFixed(1)}" r="1" fill="rgba(${fg},0.15)"/>`;
+  }
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 4. Sparkline ---
+function generateSparkline(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 12;
+
+  const n = 10;
+  const data = [];
+  for (let i = 0; i < n; i++) {
+    const v = 0.1 + (getUnit(num + i * 29, 80, i) + 80) / 100 * 0.8;
+    data.push(Math.min(Math.max(v, 0.08), 0.95));
+  }
+
+  let svg = '';
+
+  // subtle grid
+  for (let i = 0; i <= 3; i++) {
+    const y = pad + ((SIZE - pad * 2) / 3) * i;
+    svg += `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${SIZE - pad}" y2="${y.toFixed(1)}" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+  }
+
+  const stepX = (SIZE - pad * 2) / (n - 1);
+  const color1 = colors[num % range];
+  const color2 = colors[(num + 2) % range];
+
+  // area fill
+  let areaD = `M${pad},${SIZE - pad}`;
+  let lineD = '';
+  const points = [];
+  for (let i = 0; i < n; i++) {
+    const x = pad + stepX * i;
+    const y = SIZE - pad - data[i] * (SIZE - pad * 2);
+    points.push({ x, y });
+    areaD += ` L${x.toFixed(1)},${y.toFixed(1)}`;
+    lineD += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  areaD += ` L${(SIZE - pad).toFixed(1)},${SIZE - pad} Z`;
+
+  // gradient for area
+  const gid = `sg${num % 999}`;
+  svg += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color1}" stop-opacity="0.25"/><stop offset="100%" stop-color="${color1}" stop-opacity="0.02"/></linearGradient></defs>`;
+  svg += `<path d="${areaD}" fill="url(#${gid})"/>`;
+  svg += `<path d="${lineD}" fill="none" stroke="${color1}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+
+  // second subtle line (offset)
+  let line2D = '';
+  for (let i = 0; i < n; i++) {
+    const x = pad + stepX * i;
+    const offset = (getUnit(num + i * 19 + 100, 30, i) + 30) / 100 * 0.3;
+    const y = SIZE - pad - (data[i] * 0.6 + offset) * (SIZE - pad * 2);
+    line2D += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  svg += `<path d="${line2D}" fill="none" stroke="${color2}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" stroke-dasharray="3,3"/>`;
+
+  // end dot with glow
+  const last = points[n - 1];
+  svg += `<circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="4" fill="${color1}" opacity="0.2"/>`;
+  svg += `<circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="2" fill="${bg}"/>`;
+  svg += `<circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="1.5" fill="${color1}"/>`;
+
+  // start dot (small)
+  const first = points[0];
+  svg += `<circle cx="${first.x.toFixed(1)}" cy="${first.y.toFixed(1)}" r="1" fill="${color1}" opacity="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 5. Heatmap ---
+function generateHeatmap(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const cols = 7, rows = 7;
+  const gap = 2.5;
+  const cellSize = (SIZE - gap * (cols + 1)) / cols;
+
+  let svg = '';
+
+  // use a single base color with varying opacity for heatmap feel
+  const baseColor = colors[num % range];
+  const altColor = colors[(num + 2) % range];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const val = (getUnit(num + idx * 23, 100, idx) + 100) / 200; // 0..1
+      const x = gap + c * (cellSize + gap);
+      const y = gap + r * (cellSize + gap);
+      const useAlt = getBoolean(num + idx, idx % 5);
+      const color = useAlt ? altColor : baseColor;
+      const opacity = 0.12 + val * 0.78;
+      const rx = 2;
+      svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${cellSize.toFixed(1)}" height="${cellSize.toFixed(1)}" rx="${rx}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`;
+    }
+  }
+
+  // highlight one cell with border
+  const hIdx = num % (rows * cols);
+  const hR = Math.floor(hIdx / cols), hC = hIdx % cols;
+  const hx = gap + hC * (cellSize + gap);
+  const hy = gap + hR * (cellSize + gap);
+  svg += `<rect x="${hx.toFixed(1)}" y="${hy.toFixed(1)}" width="${cellSize.toFixed(1)}" height="${cellSize.toFixed(1)}" rx="2" fill="none" stroke="rgba(${fg},0.25)" stroke-width="0.8"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 6. Treemap ---
+function generateTreemap(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 5;
+  const gap = 2.5;
+
+  const rectCount = 5 + num % 3;
+  const areas = [];
+  let total = 0;
+  for (let i = 0; i < rectCount; i++) {
+    const a = 20 + (getUnit(num + i * 59, 80, i) + 80);
+    areas.push(a); total += a;
+  }
+
+  // 2-row layout
+  const mid = Math.ceil(rectCount / 2);
+  const row1A = areas.slice(0, mid).reduce((s, v) => s + v, 0);
+  const row2A = areas.slice(mid).reduce((s, v) => s + v, 0);
+  const totalW = SIZE - pad * 2;
+  const totalH = SIZE - pad * 2;
+  const row1H = totalH * (row1A / (row1A + row2A)) - gap / 2;
+  const row2H = totalH - row1H - gap / 2;
+
+  const rects = [];
+  let x = pad;
+  for (let i = 0; i < mid; i++) {
+    const w = (areas[i] / row1A) * totalW - (i < mid - 1 ? gap : 0);
+    rects.push({ x, y: pad, w, h: row1H, color: colors[(num + i * 3) % range], i });
+    x += w + gap;
+  }
+  x = pad;
+  for (let i = mid; i < rectCount; i++) {
+    const w = (areas[i] / row2A) * totalW - (i < rectCount - 1 ? gap : 0);
+    rects.push({ x, y: pad + row1H + gap, w, h: row2H, color: colors[(num + i * 3) % range], i });
+    x += w + gap;
+  }
+
+  let svg = '';
+  for (const r of rects) {
+    const opacity = 0.5 + (r.i / rectCount) * 0.45;
+    svg += `<rect x="${r.x.toFixed(1)}" y="${r.y.toFixed(1)}" width="${Math.max(r.w, 1).toFixed(1)}" height="${Math.max(r.h, 1).toFixed(1)}" rx="3" fill="${r.color}" opacity="${opacity.toFixed(2)}"/>`;
+    // inner subtle label
+    if (r.w > 14 && r.h > 10) {
+      const lw = Math.min(r.w * 0.4, 16);
+      svg += `<rect x="${(r.x + 4).toFixed(1)}" y="${(r.y + 5).toFixed(1)}" width="${lw.toFixed(1)}" height="2" rx="1" fill="rgba(${fg},0.2)"/>`;
+      if (r.h > 18) {
+        svg += `<rect x="${(r.x + 4).toFixed(1)}" y="${(r.y + 10).toFixed(1)}" width="${(lw * 0.6).toFixed(1)}" height="1.5" rx="0.75" fill="rgba(${fg},0.1)"/>`;
+      }
+    }
+  }
+
+  // outer subtle border
+  svg += `<rect x="${pad - 1}" y="${pad - 1}" width="${(totalW + 2).toFixed(1)}" height="${(totalH + 2).toFixed(1)}" rx="4" fill="none" stroke="rgba(${fg},0.08)" stroke-width="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 7. Boxplot ---
+function generateBoxplot(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 12;
+  const boxCount = 3 + num % 3; // 3-5 boxes
+  const plotH = SIZE - pad * 2;
+  const plotW = SIZE - pad * 2;
+  const boxGap = 4;
+  const boxW = (plotW - boxGap * (boxCount + 1)) / boxCount;
+
+  let svg = '';
+
+  // subtle horizontal grid
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + (plotH / 4) * i;
+    svg += `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${SIZE - pad}" y2="${y.toFixed(1)}" stroke="rgba(${fg},0.06)" stroke-width="0.5"/>`;
+  }
+
+  for (let i = 0; i < boxCount; i++) {
+    const x = pad + boxGap + i * (boxW + boxGap);
+    const color = colors[(num + i * 3) % range];
+
+    // generate 5 stats from hash — wide variation per box
+    const seed = num + i * 47;
+    const spread = 0.3 + (getUnit(seed + 1, 70, 0) + 70) / 100 * 0.55; // 0.3-0.85
+    const center = 0.25 + (getUnit(seed + 10, 50, 5) + 50) / 100 * 0.5; // 0.25-0.75
+    const halfSpread = spread / 2;
+    const iqrRatio = 0.2 + (getUnit(seed + 2, 60, 1) + 60) / 100 * 0.5; // 0.2-0.7
+    const medOffset = (getUnit(seed + 3, 80, 2) + 80) / 100 * 0.6 - 0.3; // -0.3 to +0.3
+
+    // clamp to plot area
+    let minR = center - halfSpread;
+    let maxR = center + halfSpread;
+    if (minR < 0.03) { minR = 0.03; maxR = Math.min(minR + spread, 0.97); }
+    if (maxR > 0.97) { maxR = 0.97; minR = Math.max(maxR - spread, 0.03); }
+
+    let q1R     = center - halfSpread * iqrRatio;
+    let q3R     = center + halfSpread * iqrRatio;
+    let medianR = (q1R + q3R) / 2 + medOffset * (q3R - q1R);
+    medianR = Math.max(q1R + 0.02, Math.min(q3R - 0.02, medianR));
+
+    const minY = pad + plotH * (1 - maxR);
+    const q1Y  = pad + plotH * (1 - q3R);
+    const medY = pad + plotH * (1 - medianR);
+    const q3Y  = pad + plotH * (1 - q1R);
+    const maxY = pad + plotH * (1 - minR);
+    const cx = x + boxW / 2;
+
+    // whisker: min to Q1
+    svg += `<line x1="${cx.toFixed(1)}" y1="${minY.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${q1Y.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.5"/>`;
+    // whisker cap at min
+    svg += `<line x1="${(cx - boxW * 0.3).toFixed(1)}" y1="${minY.toFixed(1)}" x2="${(cx + boxW * 0.3).toFixed(1)}" y2="${minY.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.5"/>`;
+
+    // whisker: Q3 to max
+    svg += `<line x1="${cx.toFixed(1)}" y1="${q3Y.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${maxY.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.5"/>`;
+    // whisker cap at max
+    svg += `<line x1="${(cx - boxW * 0.3).toFixed(1)}" y1="${maxY.toFixed(1)}" x2="${(cx + boxW * 0.3).toFixed(1)}" y2="${maxY.toFixed(1)}" stroke="${color}" stroke-width="1" opacity="0.5"/>`;
+
+    // box: Q1 to Q3
+    const boxH = q3Y - q1Y;
+    svg += `<rect x="${x.toFixed(1)}" y="${q1Y.toFixed(1)}" width="${boxW.toFixed(1)}" height="${Math.max(boxH, 2).toFixed(1)}" rx="2" fill="${color}" opacity="0.3" stroke="${color}" stroke-width="1" stroke-opacity="0.7"/>`;
+
+    // median line
+    svg += `<line x1="${(x + 2).toFixed(1)}" y1="${medY.toFixed(1)}" x2="${(x + boxW - 2).toFixed(1)}" y2="${medY.toFixed(1)}" stroke="${color}" stroke-width="2" stroke-linecap="round" opacity="0.9"/>`;
+
+    // outlier dots (0-2)
+    const outCount = getDigit(seed, 4) % 3;
+    for (let o = 0; o < outCount; o++) {
+      const outAbove = getBoolean(seed + o, 6 + o);
+      const outDist = 0.04 + (getUnit(seed + o * 11 + 7, 15, 5 + o) + 15) / 100 * 0.08;
+      const outR = outAbove ? maxR + outDist : minR - outDist;
+      if (outR > 0.02 && outR < 0.98) {
+        const outY = pad + plotH * (1 - outR);
+        const outX = cx + (getUnit(seed + o * 13, 6, 3 + o) - 3) * 1.5;
+        svg += `<circle cx="${outX.toFixed(1)}" cy="${outY.toFixed(1)}" r="1.5" fill="${color}" opacity="0.6"/>`;
+      }
+    }
+  }
+
+  // axis line
+  svg += `<line x1="${pad}" y1="${(SIZE - pad).toFixed(1)}" x2="${(SIZE - pad).toFixed(1)}" y2="${(SIZE - pad).toFixed(1)}" stroke="rgba(${fg},0.1)" stroke-width="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 8. Line Chart ---
+function generateLineChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 12;
+  const plotW = SIZE - pad * 2;
+  const plotH = SIZE - pad * 2;
+
+  const n = 8;
+  const data = [];
+  for (let i = 0; i < n; i++) {
+    const v = 0.15 + (getUnit(num + i * 29, 70, i) + 70) / 100 * 0.7;
+    data.push(Math.min(Math.max(v, 0.1), 0.95));
+  }
+  const stepX = plotW / (n - 1);
+  const color = colors[num % range];
+
+  let svg = '';
+
+  // grid
+  for (let i = 0; i <= 3; i++) {
+    const y = pad + (plotH / 3) * i;
+    svg += `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${SIZE - pad}" y2="${y.toFixed(1)}" stroke="rgba(${fg},0.06)" stroke-width="0.5"/>`;
+  }
+
+  // line
+  let d = '';
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const x = pad + stepX * i;
+    const y = SIZE - pad - data[i] * plotH;
+    pts.push({ x, y });
+    d += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+
+  // dots
+  for (let i = 0; i < n; i++) {
+    svg += `<circle cx="${pts[i].x.toFixed(1)}" cy="${pts[i].y.toFixed(1)}" r="2.5" fill="${bg}"/>`;
+    svg += `<circle cx="${pts[i].x.toFixed(1)}" cy="${pts[i].y.toFixed(1)}" r="1.5" fill="${color}" opacity="0.9"/>`;
+  }
+
+  // second line (dashed, subtle)
+  const color2 = colors[(num + 2) % range];
+  let d2 = '';
+  for (let i = 0; i < n; i++) {
+    const x = pad + stepX * i;
+    const off = (getUnit(num + i * 19 + 200, 25, i) + 25) / 100 * 0.25;
+    const y = SIZE - pad - (data[i] * 0.7 + off) * plotH;
+    d2 += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+  }
+  svg += `<path d="${d2}" fill="none" stroke="${color2}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" stroke-dasharray="3,3"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 9. Column Chart (vertical bars, same as current Bar but renamed) ---
+// (already exists as generateBarChart)
+
+// --- 10. Pie Chart ---
+function generatePieChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const cx = SIZE / 2, cy = SIZE / 2 - 1, R = 28;
+  const depth = 2.5; // 3D thickness
+
+  const slices = 3 + num % 3; // 3-5 slices
+  const raw = [];
+  let total = 0;
+  for (let i = 0; i < slices; i++) {
+    const v = 15 + (getUnit(num + i * 43, 80, i) + 80);
+    raw.push(v); total += v;
+  }
+
+  let svg = '';
+
+  // 3D: draw the "side" rim for slices that face downward (bottom half)
+  // First pass: draw side faces for the bottom portion of the pie
+  let angle = -90;
+  for (let i = 0; i < slices; i++) {
+    const sweep = (raw[i] / total) * 360;
+    const startAngle = angle;
+    const endAngle = angle + sweep;
+    const color = colors[(num + i * 3) % range];
+
+    // Only draw side for arcs that cross the bottom half (0° to 180° in standard coords)
+    // SVG coords: 0° is right, 90° is down
+    const sNorm = ((startAngle % 360) + 360) % 360;
+    const eNorm = ((endAngle % 360) + 360) % 360;
+
+    // Draw side rim as small arc segments along the bottom
+    const step = 3; // degrees per step for smooth rim
+    for (let a = Math.ceil(startAngle / step) * step; a < endAngle; a += step) {
+      const aRad = a * Math.PI / 180;
+      const nextA = Math.min(a + step, endAngle);
+      const nextRad = nextA * Math.PI / 180;
+
+      // Only draw rim for the bottom-facing portion (sin > 0 in SVG coords)
+      if (Math.sin(aRad) > 0.05 || Math.sin(nextRad) > 0.05) {
+        const x0 = cx + Math.cos(aRad) * R;
+        const y0 = cy + Math.sin(aRad) * R;
+        const x1 = cx + Math.cos(nextRad) * R;
+        const y1 = cy + Math.sin(nextRad) * R;
+        svg += `<polygon points="${x0.toFixed(1)},${y0.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${(y1 + depth).toFixed(1)} ${x0.toFixed(1)},${(y0 + depth).toFixed(1)}" fill="${color}" opacity="0.4"/>`;
+      }
+    }
+    angle = endAngle;
+  }
+
+  // Top face of pie
+  angle = -90;
+  for (let i = 0; i < slices; i++) {
+    const sweep = (raw[i] / total) * 360;
+    const startAngle = angle;
+    const endAngle = angle + sweep;
+    const color = colors[(num + i * 3) % range];
+
+    const rad0 = startAngle * Math.PI / 180;
+    const rad1 = endAngle * Math.PI / 180;
+    const x0 = cx + Math.cos(rad0) * R;
+    const y0 = cy + Math.sin(rad0) * R;
+    const x1 = cx + Math.cos(rad1) * R;
+    const y1 = cy + Math.sin(rad1) * R;
+    const largeArc = sweep > 180 ? 1 : 0;
+
+    svg += `<path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 ${largeArc} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${color}" opacity="0.9"/>`;
+
+    // gap line between slices
+    svg += `<line x1="${cx}" y1="${cy}" x2="${x0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="${bg}" stroke-width="1.2"/>`;
+
+    angle = endAngle;
+  }
+
+  // subtle shadow under pie
+  svg += `<ellipse cx="${cx}" cy="${cy + depth + 1.5}" rx="${R * 0.85}" ry="2" fill="rgba(${fg},0.05)"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 11. Area Chart ---
+function generateAreaChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 10;
+  const plotW = SIZE - pad * 2;
+  const plotH = SIZE - pad * 2;
+
+  const n = 7;
+  const layers = 2;
+  let svg = '';
+
+  // grid
+  for (let i = 0; i <= 3; i++) {
+    const y = pad + (plotH / 3) * i;
+    svg += `<line x1="${pad}" y1="${y.toFixed(1)}" x2="${SIZE - pad}" y2="${y.toFixed(1)}" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+  }
+
+  const stepX = plotW / (n - 1);
+
+  for (let l = layers - 1; l >= 0; l--) {
+    const color = colors[(num + l * 2) % range];
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const base = 0.15 + (getUnit(num + l * 100 + i * 31, 60, i + l) + 60) / 100 * 0.6;
+      const offset = l * 0.12;
+      pts.push(Math.min(Math.max(base + offset, 0.1), 0.95));
+    }
+
+    // area
+    let areaD = `M${pad},${SIZE - pad}`;
+    let lineD = '';
+    for (let i = 0; i < n; i++) {
+      const x = pad + stepX * i;
+      const y = SIZE - pad - pts[i] * plotH;
+      areaD += ` L${x.toFixed(1)},${y.toFixed(1)}`;
+      lineD += (i === 0 ? 'M' : 'L') + `${x.toFixed(1)},${y.toFixed(1)} `;
+    }
+    areaD += ` L${(pad + stepX * (n - 1)).toFixed(1)},${SIZE - pad} Z`;
+
+    const fillOp = l === 0 ? 0.3 : 0.15;
+    svg += `<path d="${areaD}" fill="${color}" fill-opacity="${fillOp}"/>`;
+    svg += `<path d="${lineD}" fill="none" stroke="${color}" stroke-width="${1.5 - l * 0.3}" stroke-linecap="round" stroke-linejoin="round" opacity="${0.9 - l * 0.3}"/>`;
+  }
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 12. Bar Chart (horizontal) ---
+function generateHBarChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 10;
+  const barCount = 5;
+  const gap = 3;
+  const barH = (SIZE - pad * 2 - gap * (barCount - 1)) / barCount;
+  const maxW = SIZE - pad * 2 - 8;
+
+  let svg = '';
+
+  // subtle vertical grid
+  for (let i = 1; i <= 3; i++) {
+    const x = pad + 8 + (maxW / 3) * i;
+    svg += `<line x1="${x.toFixed(1)}" y1="${pad}" x2="${x.toFixed(1)}" y2="${SIZE - pad}" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+  }
+
+  for (let i = 0; i < barCount; i++) {
+    const ratio = 0.2 + (getUnit(num + i * 37, 80, i) + 80) / 100 * 0.7;
+    const w = maxW * Math.min(Math.max(ratio, 0.15), 1);
+    const y = pad + i * (barH + gap);
+    const color = colors[(num + i * 3) % range];
+    const opacity = 0.55 + (i / barCount) * 0.4;
+
+    svg += `<rect x="${(pad + 8).toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barH.toFixed(1)}" rx="${Math.min(barH / 2, 2.5)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`;
+    // highlight left edge
+    svg += `<rect x="${(pad + 8).toFixed(1)}" y="${y.toFixed(1)}" width="3" height="${barH.toFixed(1)}" rx="${Math.min(barH / 2, 2.5)}" fill="${color}" opacity="0.9"/>`;
+  }
+
+  // axis line
+  svg += `<line x1="${pad + 8}" y1="${pad}" x2="${pad + 8}" y2="${SIZE - pad}" stroke="rgba(${fg},0.1)" stroke-width="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 13. Scatter Chart ---
+function generateScatterChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 10;
+
+  const dotCount = 12 + num % 8; // 12-19 dots
+  let svg = '';
+
+  // grid
+  for (let i = 0; i <= 3; i++) {
+    const v = pad + ((SIZE - pad * 2) / 3) * i;
+    svg += `<line x1="${pad}" y1="${v.toFixed(1)}" x2="${SIZE - pad}" y2="${v.toFixed(1)}" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+    svg += `<line x1="${v.toFixed(1)}" y1="${pad}" x2="${v.toFixed(1)}" y2="${SIZE - pad}" stroke="rgba(${fg},0.05)" stroke-width="0.5"/>`;
+  }
+
+  // dots
+  for (let i = 0; i < dotCount; i++) {
+    const xR = 0.05 + (getUnit(num + i * 17, 90, i) + 90) / 100 * 0.9;
+    const yR = 0.05 + (getUnit(num + i * 23, 90, (i + 3) % 10) + 90) / 100 * 0.9;
+    const x = pad + xR * (SIZE - pad * 2);
+    const y = SIZE - pad - yR * (SIZE - pad * 2);
+    const color = colors[(num + i * 7) % range];
+    const r = 1.5 + (getUnit(num + i * 11, 30, i) + 30) / 100 * 2;
+    const opacity = 0.4 + (getUnit(num + i * 13, 50, i) + 50) / 100 * 0.5;
+
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`;
+  }
+
+  // trend line — angle from hash, can be positive, negative, or flat
+  const trendColor = colors[num % range];
+  const slope = ((getUnit(num + 500, 80, 0) + 80) / 100 * 1.2 - 0.6); // -0.6 to +0.6
+  const intercept = 0.3 + (getUnit(num + 600, 40, 1) + 40) / 100 * 0.4; // 0.3-0.7
+  const y0 = SIZE - pad - intercept * (SIZE - pad * 2);
+  const y1 = SIZE - pad - (intercept + slope) * (SIZE - pad * 2);
+  svg += `<line x1="${pad}" y1="${y0.toFixed(1)}" x2="${SIZE - pad}" y2="${y1.toFixed(1)}" stroke="${trendColor}" stroke-width="1" stroke-dasharray="4,3" opacity="0.35"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 14. Funnel Chart ---
+function generateFunnelChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const pad = 8;
+  const cx = SIZE / 2;
+  const stages = 3 + num % 3; // 3-5 stages
+  const maxW = SIZE - pad * 2;
+
+  // per-stage narrowing ratios & heights from hash — wide variation
+  const stageRatios = [1.0]; // top of first stage is full width
+  const stageHeights = [];
+  let totalHeightWeight = 0;
+  for (let i = 0; i < stages; i++) {
+    // width ratio at bottom of each stage: vary narrowing speed per stage
+    const prevRatio = stageRatios[stageRatios.length - 1];
+    const narrowFactor = 0.5 + (getUnit(num + i * 31, 40, i) + 40) / 100 * 0.4; // 0.5-0.9
+    stageRatios.push(Math.max(prevRatio * narrowFactor, 0.08));
+
+    // height weight: stages can be different heights
+    const hw = 0.6 + (getUnit(num + i * 23, 50, i + 3) + 50) / 100 * 0.8; // 0.6-1.4
+    stageHeights.push(hw);
+    totalHeightWeight += hw;
+  }
+
+  // compute actual y positions
+  const totalH = SIZE - pad * 2;
+  let y = pad;
+  let svg = '';
+
+  // global lean from hash — shifts center progressively per stage
+  const leanPerStage = (getUnit(num + 77, 20, 0) - 10) / 100 * 6; // -0.6 to +0.6 px per stage
+
+  for (let i = 0; i < stages; i++) {
+    const topW = maxW * stageRatios[i];
+    const botW = maxW * stageRatios[i + 1];
+    const sh = (stageHeights[i] / totalHeightWeight) * totalH;
+    const color = colors[(num + i * 2) % range];
+    const opacity = 0.85 - i * 0.08;
+
+    // consistent offset: top and bottom edges shift together so layers align
+    const topOffset = leanPerStage * i;
+    const botOffset = leanPerStage * (i + 1);
+
+    svg += `<polygon points="${(cx - topW / 2 + topOffset).toFixed(1)},${y.toFixed(1)} ${(cx + topW / 2 + topOffset).toFixed(1)},${y.toFixed(1)} ${(cx + botW / 2 + botOffset).toFixed(1)},${(y + sh).toFixed(1)} ${(cx - botW / 2 + botOffset).toFixed(1)},${(y + sh).toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`;
+
+    // separator line
+    if (i > 0) {
+      svg += `<line x1="${(cx - topW / 2 + topOffset).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(cx + topW / 2 + topOffset).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${bg}" stroke-width="1.5"/>`;
+    }
+
+    y += sh;
+  }
+
+  // subtle side guide lines
+  svg += `<line x1="${pad}" y1="${pad}" x2="${pad}" y2="${(SIZE - pad).toFixed(1)}" stroke="rgba(${fg},0.04)" stroke-width="0.5"/>`;
+  svg += `<line x1="${(SIZE - pad)}" y1="${pad}" x2="${(SIZE - pad)}" y2="${(SIZE - pad).toFixed(1)}" stroke="rgba(${fg},0.04)" stroke-width="0.5"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 15. Liquid Chart ---
+function generateLiquidChart(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  const cx = SIZE / 2, cy = SIZE / 2, R = 30;
+
+  // fill level from hash (30%-85%)
+  const level = 0.3 + (getUnit(num, 55, 0) + 55) / 100 * 0.55;
+  const color = colors[num % range];
+  const color2 = colors[(num + 2) % range];
+
+  // water level y position (from bottom)
+  const waterY = cy + R - level * R * 2;
+
+  let svg = '';
+
+  // outer ring
+  svg += `<circle cx="${cx}" cy="${cy}" r="${R + 2}" fill="none" stroke="rgba(${fg},0.1)" stroke-width="1"/>`;
+
+  // clip to circle
+  const clipId = `lc${num % 9999}`;
+  svg += `<defs><clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath></defs>`;
+
+  // water body with wave
+  const waveAmp = 2 + (num % 3);
+  const waveFreq = 2 + num % 2;
+  svg += `<g clip-path="url(#${clipId})">`;
+  // wave path
+  let wavePath = `M${cx - R},${waterY.toFixed(1)}`;
+  for (let x = -R; x <= R; x += 1) {
+    const wy = waterY + Math.sin((x / R) * Math.PI * waveFreq + num * 0.1) * waveAmp;
+    wavePath += ` L${(cx + x).toFixed(1)},${wy.toFixed(1)}`;
+  }
+  wavePath += ` L${(cx + R).toFixed(1)},${cy + R} L${(cx - R).toFixed(1)},${cy + R} Z`;
+  svg += `<path d="${wavePath}" fill="${color}" opacity="0.5"/>`;
+
+  // second wave layer (slightly offset)
+  let wavePath2 = `M${cx - R},${(waterY + 1).toFixed(1)}`;
+  for (let x = -R; x <= R; x += 1) {
+    const wy = waterY + 1 + Math.sin((x / R) * Math.PI * (waveFreq + 1) + num * 0.3 + 2) * (waveAmp * 0.7);
+    wavePath2 += ` L${(cx + x).toFixed(1)},${wy.toFixed(1)}`;
+  }
+  wavePath2 += ` L${(cx + R).toFixed(1)},${cy + R} L${(cx - R).toFixed(1)},${cy + R} Z`;
+  svg += `<path d="${wavePath2}" fill="${color2}" opacity="0.3"/>`;
+
+  svg += `</g>`;
+
+  // circle outline
+  svg += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="rgba(${fg},0.15)" stroke-width="1"/>`;
+
+  // percentage text
+  const pct = Math.round(level * 100);
+  svg += `<text x="${cx}" y="${cy + 2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(${fg},0.6)" font-size="12" font-weight="700" font-family="ui-monospace,monospace">${pct}%</text>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- 16. Venn Diagram ---
+function generateVennDiagram(name, colors, size = 80, isLight = false) {
+  const num = hashCode(name);
+  const range = colors.length;
+  const SIZE = 80;
+  const bg = makeBg(colors, isLight);
+  const cx = SIZE / 2, cy = SIZE / 2;
+
+  const circleCount = 2 + num % 2; // 2 or 3 circles
+  const R = circleCount === 2 ? 22 : 18;
+  const spread = circleCount === 2 ? 10 : 8;
+
+  let svg = '';
+
+  if (circleCount === 2) {
+    const c1x = cx - spread, c1y = cy - 2;
+    const c2x = cx + spread, c2y = cy + 2;
+    const color1 = colors[num % range];
+    const color2 = colors[(num + 2) % range];
+
+    svg += `<circle cx="${c1x}" cy="${c1y}" r="${R}" fill="${color1}" opacity="0.35"/>`;
+    svg += `<circle cx="${c2x}" cy="${c2y}" r="${R}" fill="${color2}" opacity="0.35"/>`;
+    // outlines
+    svg += `<circle cx="${c1x}" cy="${c1y}" r="${R}" fill="none" stroke="${color1}" stroke-width="1" opacity="0.5"/>`;
+    svg += `<circle cx="${c2x}" cy="${c2y}" r="${R}" fill="none" stroke="${color2}" stroke-width="1" opacity="0.5"/>`;
+  } else {
+    // 3 circles in triangle arrangement
+    const angles = [-90, 30, 150];
+    const circleColors = [colors[num % range], colors[(num + 1) % range], colors[(num + 2) % range]];
+    for (let i = 0; i < 3; i++) {
+      const a = angles[i] * Math.PI / 180;
+      const ccx = cx + Math.cos(a) * spread;
+      const ccy = cy + Math.sin(a) * spread;
+      svg += `<circle cx="${ccx.toFixed(1)}" cy="${ccy.toFixed(1)}" r="${R}" fill="${circleColors[i]}" opacity="0.3"/>`;
+      svg += `<circle cx="${ccx.toFixed(1)}" cy="${ccy.toFixed(1)}" r="${R}" fill="none" stroke="${circleColors[i]}" stroke-width="1" opacity="0.45"/>`;
+    }
+  }
+
+  // center intersection dot
+  const fg = isLight ? '0,0,0' : '255,255,255';
+  svg += `<circle cx="${cx}" cy="${cy}" r="2" fill="rgba(${fg},0.3)"/>`;
+
+  return `<svg viewBox="0 0 ${SIZE} ${SIZE}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${SIZE}" height="${SIZE}" fill="${bg}"/>${svg}</svg>`;
+}
+
+// --- Render ---
+const container = document.getElementById('app');
+
+const styles = [
+  { name: 'Line Chart',    fn: generateLineChart,    desc: 'Dual line + data dots + dashed comparison' },
+  { name: 'Column Chart',  fn: generateBarChart,     desc: 'Rounded bars + gradient top highlight + axis ticks' },
+  { name: 'Pie Chart',     fn: generatePieChart,     desc: 'Arc slices + center hole + gap lines' },
+  { name: 'Area Chart',    fn: generateAreaChart,    desc: 'Stacked area layers + dual fill opacity' },
+  { name: 'Bar Chart (H)', fn: generateHBarChart,    desc: 'Horizontal bars + left highlight + vertical axis' },
+  { name: 'Radar Chart',   fn: generateRadarChart,   desc: 'Polygon fill + grid + hollow vertex dots' },
+  { name: 'Treemap',       fn: generateTreemap,      desc: 'Opacity layers + inner label bars + subtle border' },
+  { name: 'Scatter Chart', fn: generateScatterChart, desc: 'Varied dots + dashed trend line' },
+  { name: 'Funnel Chart',  fn: generateFunnelChart,  desc: 'Centered trapezoids + gap separators' },
+  { name: 'Liquid Chart',  fn: generateLiquidChart,  desc: 'Wave clip + dual wave layers + center percentage' },
+  { name: 'Venn Diagram',  fn: generateVennDiagram,  desc: '2/3 overlapping circles + outlines + center dot' },
+  { name: 'Donut Chart',   fn: generateDonutChart,   desc: 'Ring segments + center metric + outer tick dots' },
+  { name: 'Sparkline',     fn: generateSparkline,    desc: 'Area gradient + dashed secondary line + end glow' },
+  { name: 'Heatmap',       fn: generateHeatmap,      desc: 'Single-hue opacity grid + highlight cell' },
+  { name: 'Boxplot',       fn: generateBoxplot,      desc: 'Whisker + IQR box + median line + outlier dot' },
+];
+
+for (const style of styles) {
+  const section = document.createElement('div');
+  section.className = 'style-section';
+  section.innerHTML = `<h2>${style.name}</h2><p>${style.desc}</p>`;
+  container.appendChild(section);
+
+  // Dark theme
+  const darkLabel = document.createElement('div');
+  darkLabel.className = 'palette-label';
+  darkLabel.textContent = 'Dark';
+  section.appendChild(darkLabel);
+
+  const darkRow = document.createElement('div');
+  darkRow.className = 'avatar-row';
+  section.appendChild(darkRow);
+
+  for (const [key, pal] of Object.entries(PALETTES)) {
+    for (const n of NAMES.slice(0, 3)) {
+      const cell = document.createElement('div');
+      cell.className = 'avatar-cell';
+      cell.innerHTML = `${style.fn(n, pal.colors, 64, false)}<div class="name">${n.split(' ')[0]}</div>`;
+      darkRow.appendChild(cell);
+    }
+  }
+
+  // Light theme
+  const lightLabel = document.createElement('div');
+  lightLabel.className = 'palette-label';
+  lightLabel.textContent = 'Light';
+  section.appendChild(lightLabel);
+
+  const lightRow = document.createElement('div');
+  lightRow.className = 'avatar-row';
+  section.appendChild(lightRow);
+
+  for (const [key, pal] of Object.entries(PALETTES)) {
+    for (const n of NAMES.slice(0, 3)) {
+      const cell = document.createElement('div');
+      cell.className = 'avatar-cell';
+      cell.innerHTML = `${style.fn(n, pal.colors, 64, true)}<div class="name">${n.split(' ')[0]}</div>`;
+      lightRow.appendChild(cell);
+    }
+  }
+}
+// --- Theme Toggle ---
+let isDark = true;
+document.body.className = 'dark';
+document.getElementById('themeToggle').addEventListener('click', () => {
+  isDark = !isDark;
+  document.body.className = isDark ? 'dark' : 'light';
+});
+
+// --- Shape Toggle ---
+document.getElementById('shapeToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.shape-btn');
+  if (!btn) return;
+  const shape = btn.dataset.shape;
+  document.querySelectorAll('#shapeToggle .shape-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.avatar-cell svg').forEach(svg => {
+    svg.classList.toggle('shape-square', shape === 'square');
+  });
+});
+</script>
+</body>
+</html>
