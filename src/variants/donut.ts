@@ -19,6 +19,8 @@ export function generateDonut({ name = '', colors = [], size = 40, light = false
   }
 
   const C = 2 * Math.PI * R;
+  const gap = C * 0.12 / segments;
+  const available = C - segments * gap;
   let offset = 0;
   let inner = '';
 
@@ -26,10 +28,10 @@ export function generateDonut({ name = '', colors = [], size = 40, light = false
 
   for (let i = 0; i < segments; i++) {
     const frac = raw[i] / total;
-    const dash = C * frac * 0.88;
+    const dash = available * frac;
     const color = colors[(num + i * 7) % range];
-    inner += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-offset / total * C).toFixed(1)}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})" opacity="0.85"/>`;
-    offset += raw[i];
+    inner += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-offset).toFixed(1)}" stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})" opacity="0.85"/>`;
+    offset += dash + gap;
   }
 
   inner += `<circle cx="${cx}" cy="${cy}" r="${R - strokeW / 2 - 3}" fill="none" stroke="rgba(${foreground},0.05)" stroke-width="0.5"/>`;
