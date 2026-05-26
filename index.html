@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vistars - Data Visualization Avatars</title>
+  <script type="module" crossorigin src="/vistars/assets/index-CyfFPQhn.js"></script>
+  <link rel="stylesheet" crossorigin href="/vistars/assets/index-NLN5z-cx.css">
+</head>
+<body>
+  <div class="banner">
+    This is a playground using <a href="https://github.com/hustcc/vistars" target="_blank"><strong>vistars</strong></a> library.
+  </div>
+
+  <header class="header">
+    <div class="segment-group" id="variant-selector">
+      <button class="segment" data-variant="bar">bar</button>
+      <button class="segment" data-variant="donut">donut</button>
+      <button class="segment" data-variant="radar">radar</button>
+      <button class="segment" data-variant="sparkline">sparkline</button>
+      <button class="segment" data-variant="heatmap">heatmap</button>
+      <button class="segment" data-variant="treemap">treemap</button>
+      <button class="segment" data-variant="boxplot">boxplot</button>
+      <button class="segment" data-variant="line">line</button>
+      <button class="segment" data-variant="pie">pie</button>
+      <button class="segment" data-variant="area">area</button>
+      <button class="segment" data-variant="hbar">hbar</button>
+      <button class="segment" data-variant="scatter">scatter</button>
+      <button class="segment" data-variant="funnel">funnel</button>
+      <button class="segment" data-variant="liquid">liquid</button>
+      <button class="segment" data-variant="venn">venn</button>
+    </div>
+
+    <div class="colors-section" id="colors-section">
+      <div class="color-dot" data-index="0">
+        <input type="color" class="color-input" data-index="0">
+      </div>
+      <div class="color-dot" data-index="1">
+        <input type="color" class="color-input" data-index="1">
+      </div>
+      <div class="color-dot" data-index="2">
+        <input type="color" class="color-input" data-index="2">
+      </div>
+      <div class="color-dot" data-index="3">
+        <input type="color" class="color-input" data-index="3">
+      </div>
+      <div class="color-dot" data-index="4">
+        <input type="color" class="color-input" data-index="4">
+      </div>
+    </div>
+
+    <button class="button" id="random-palette">Random palette</button>
+    <button class="button" id="toggle-square">Square</button>
+    <button class="button" id="toggle-light">Light</button>
+
+    <div class="segment-group" id="size-selector">
+      <button class="segment size-dot small" data-size="40"></button>
+      <button class="segment size-dot medium" data-size="80"></button>
+      <button class="segment size-dot large" data-size="128"></button>
+    </div>
+  </header>
+
+  <main class="avatars-grid" id="avatars-grid"></main>
+
+</body>
+</html>
