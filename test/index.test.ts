@@ -191,5 +191,17 @@ describe('vistars', () => {
       expect(typeof svg).toBe('string');
       expect(svg.length).toBeGreaterThan(0);
     });
+
+    it('should include anthropomorphic facial features', () => {
+      const svg = vistars({ name: 'Avatar Face', variant: 'line' });
+      expect(svg).toContain('<g opacity="0.85">');
+      expect(svg).toContain('Q40 ');
+    });
+
+    it('should include facial features for square avatars too', () => {
+      const svg = vistars({ name: 'Avatar Face', variant: 'line', square: true });
+      expect(svg).toContain('<g opacity="0.85">');
+      expect(svg).toContain('Q40 ');
+    });
   });
 });
