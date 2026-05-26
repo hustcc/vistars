@@ -1,15 +1,16 @@
 import vistars from 'vistars';
 import type { AvatarVariant } from 'vistars';
 import { exampleNames } from './example-names.js';
+import { getThemeName, resolveAvatarVariant } from './playground.js';
 
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
 let state = {
-  variant: 'bar' as AvatarVariant,
+  variant: 'bar' as AvatarVariant | 'random',
   colors: [...defaultPalette],
   size: 80,
   square: false,
-  light: false,
+  light: true,
 };
 
 const variantSelector = document.getElementById('variant-selector') as HTMLElement;
@@ -38,6 +39,8 @@ function getRandomPalette(): string[] {
 }
 
 function updateUI() {
+  document.documentElement.dataset.theme = getThemeName(state.light);
+
   variantSelector.querySelectorAll('.segment').forEach((btn) => {
     btn.classList.toggle('selected', btn.getAttribute('data-variant') === state.variant);
   });
@@ -57,16 +60,17 @@ function updateUI() {
 function renderAvatars() {
   avatarsGrid.innerHTML = '';
 
-  exampleNames.forEach((name) => {
+  exampleNames.forEach((name, index) => {
     const container = document.createElement('div');
     container.className = 'avatar-container';
 
     const avatarSection = document.createElement('div');
     avatarSection.className = 'avatar-section';
+    const variant = resolveAvatarVariant(state.variant, name, index);
 
     const svg = vistars({
       name,
-      variant: state.variant,
+      variant,
       colors: state.colors,
       size: state.size,
       square: state.square,
@@ -80,9 +84,10 @@ function renderAvatars() {
     input.value = name;
     input.addEventListener('change', (e) => {
       const newName = (e.target as HTMLInputElement).value;
+      const newVariant = resolveAvatarVariant(state.variant, newName, index);
       const newSvg = vistars({
         name: newName,
-        variant: state.variant,
+        variant: newVariant,
         colors: state.colors,
         size: state.size,
         square: state.square,
@@ -102,7 +107,7 @@ function renderAvatars() {
 
 variantSelector.querySelectorAll('.segment').forEach((btn) => {
   btn.addEventListener('click', () => {
-    state.variant = btn.getAttribute('data-variant') as AvatarVariant;
+    state.variant = btn.getAttribute('data-variant') as AvatarVariant | 'random';
     updateUI();
     renderAvatars();
   });
