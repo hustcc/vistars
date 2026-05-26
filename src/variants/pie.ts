@@ -1,4 +1,4 @@
-import { hashCode, getUnit, bg, fg } from '../utilities.js';
+import { hashCode, getUnit, bg } from '../utilities.js';
 import type { AvatarProps } from '../types.js';
 
 export function generatePie({ name = '', colors = [], size = 40, light = false }: AvatarProps): string {
@@ -6,7 +6,6 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
   const range = colors.length;
   const S = 80;
   const background = bg(light);
-  const foreground = fg(light);
   const cx = S / 2, cy = S / 2 - 1, R = 28;
   const depth = 2.5;
   const slices = 3 + num % 3;
@@ -53,8 +52,6 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
     inner += `<line x1="${cx}" y1="${cy}" x2="${x0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="${background}" stroke-width="1.2"/>`;
     angle = endAngle;
   }
-
-  inner += `<ellipse cx="${cx}" cy="${cy + depth + 1.5}" rx="${R * 0.85}" ry="2" fill="rgba(${foreground},0.05)"/>`;
 
   return `<svg viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${S}" height="${S}" fill="${background}"/>${inner}</svg>`;
 }

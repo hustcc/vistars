@@ -105,6 +105,11 @@ describe('vistars', () => {
       expect(matchSnapshot('variant-pie', svg)).toBe(true);
     });
 
+    it('should not render center ellipse in pie variant', () => {
+      const svg = vistars({ variant: 'pie', colors: TEST_COLORS });
+      expect(svg).not.toContain('<ellipse');
+    });
+
     it('should generate area variant', () => {
       const svg = vistars({ variant: 'area', colors: TEST_COLORS });
       expect(matchSnapshot('variant-area', svg)).toBe(true);
