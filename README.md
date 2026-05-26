@@ -41,7 +41,6 @@ fs.writeFileSync('avatar.svg', svg);
 | colors    | string[]                                                     | `['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899']` |
 | size      | number \| string                                             | `40`        |
 | square    | boolean                                                      | `false`     |
-| light     | boolean                                                      | `false`     |
 
 ## License
 

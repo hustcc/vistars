@@ -16,13 +16,14 @@ import {
   generateVenn,
 } from './variants/index.js';
 import { hashCode } from './utilities.js';
-import type { AvatarProps, AvatarVariant } from './types.js';
+import type { AvatarProps as RawAvatarProps, AvatarVariant } from './types.js';
 
-export type { AvatarProps, AvatarVariant };
+export type AvatarProps = Omit<RawAvatarProps, 'light'>;
+export type { AvatarVariant };
 
 const DEFAULT_COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
-const VARIANT_GENERATORS: Record<AvatarVariant, (props: AvatarProps) => string> = {
+const VARIANT_GENERATORS: Record<AvatarVariant, (props: RawAvatarProps) => string> = {
   bar:       generateBar,
   donut:     generateDonut,
   radar:     generateRadar,
@@ -64,14 +65,13 @@ function vistars(props: AvatarProps = {}): string {
     colors = DEFAULT_COLORS,
     size = 40,
     square = false,
-    light = false,
     variant = 'bar',
   } = props;
 
   const safeColors = colors.length > 0 ? colors : DEFAULT_COLORS;
 
   const generator = VARIANT_GENERATORS[variant] ?? generateBar;
-  let svg = generator({ name, colors: safeColors, size, square, light });
+  let svg = generator({ name, colors: safeColors, size, square, light: false });
 
   if (!square) {
     const num = hashCode(name);

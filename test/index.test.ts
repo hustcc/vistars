@@ -140,18 +140,12 @@ describe('vistars', () => {
       expect(matchSnapshot('square', svg)).toBe(true);
     });
 
-    it('should apply light mode', () => {
-      const svg = vistars({ light: true });
-      expect(matchSnapshot('light', svg)).toBe(true);
-    });
-
     it('should generate with all options', () => {
       const svg = vistars({
         name: 'Grace Hopper',
         colors: TEST_COLORS,
         size: 80,
         square: false,
-        light: false,
         variant: 'bar',
       });
       expect(matchSnapshot('full-options', svg)).toBe(true);

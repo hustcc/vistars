@@ -1,7 +1,7 @@
 import vistars from 'vistars';
 import type { AvatarVariant } from 'vistars';
 import { exampleNames } from './example-names.js';
-import { getThemeName, resolveAvatarVariant } from './playground.js';
+import { resolveAvatarVariant } from './playground.js';
 
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
@@ -10,7 +10,6 @@ let state = {
   colors: [...defaultPalette],
   size: 80,
   square: false,
-  light: true,
 };
 
 const variantSelector = document.getElementById('variant-selector') as HTMLElement;
@@ -18,7 +17,6 @@ const sizeSelector = document.getElementById('size-selector') as HTMLElement;
 const colorsSection = document.getElementById('colors-section') as HTMLElement;
 const randomPaletteBtn = document.getElementById('random-palette') as HTMLButtonElement;
 const toggleSquareBtn = document.getElementById('toggle-square') as HTMLButtonElement;
-const toggleLightBtn = document.getElementById('toggle-light') as HTMLButtonElement;
 const avatarsGrid = document.getElementById('avatars-grid') as HTMLElement;
 
 const palettes: string[][] = [
@@ -39,8 +37,6 @@ function getRandomPalette(): string[] {
 }
 
 function updateUI() {
-  document.documentElement.dataset.theme = getThemeName(state.light);
-
   variantSelector.querySelectorAll('.segment').forEach((btn) => {
     btn.classList.toggle('selected', btn.getAttribute('data-variant') === state.variant);
   });
@@ -52,9 +48,7 @@ function updateUI() {
   colorsSection.querySelectorAll('.color-input').forEach((input, index) => {
     (input as HTMLInputElement).value = state.colors[index];
   });
-
   toggleSquareBtn.textContent = state.square ? 'Round' : 'Square';
-  toggleLightBtn.textContent = state.light ? 'Dark' : 'Light';
 }
 
 function renderAvatars() {
@@ -74,7 +68,6 @@ function renderAvatars() {
       colors: state.colors,
       size: state.size,
       square: state.square,
-      light: state.light,
     });
 
     avatarSection.innerHTML = svg;
@@ -91,7 +84,6 @@ function renderAvatars() {
         colors: state.colors,
         size: state.size,
         square: state.square,
-        light: state.light,
       });
       avatarSection.innerHTML = newSvg;
     });
@@ -137,12 +129,6 @@ randomPaletteBtn.addEventListener('click', () => {
 
 toggleSquareBtn.addEventListener('click', () => {
   state.square = !state.square;
-  updateUI();
-  renderAvatars();
-});
-
-toggleLightBtn.addEventListener('click', () => {
-  state.light = !state.light;
   updateUI();
   renderAvatars();
 });

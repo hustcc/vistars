@@ -20,10 +20,6 @@ export const avatarVariants: AvatarVariant[] = [
 
 export type PlaygroundVariant = AvatarVariant | 'random';
 
-export function getThemeName(light: boolean): 'light' | 'dark' {
-  return light ? 'light' : 'dark';
-}
-
 export function resolveAvatarVariant(variant: PlaygroundVariant, name: string, index: number): AvatarVariant {
   if (variant !== 'random') return variant;
 
