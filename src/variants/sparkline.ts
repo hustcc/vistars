@@ -37,7 +37,7 @@ export function generateSparkline({ name = '', colors = [], size = 40, light = f
   }
   areaD += ` L${(S - pad).toFixed(1)},${S - pad} Z`;
 
-  const gid = `sg${num % 999}`;
+  const gid = `sg${num}`;
   inner += `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color1}" stop-opacity="0.25"/><stop offset="100%" stop-color="${color1}" stop-opacity="0.02"/></linearGradient></defs>`;
   inner += `<path d="${areaD}" fill="url(#${gid})"/>`;
   inner += `<path d="${lineD}" fill="none" stroke="${color1}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;

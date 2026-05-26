@@ -15,6 +15,7 @@ import {
   generateLiquid,
   generateVenn,
 } from './variants/index.js';
+import { hashCode } from './utilities.js';
 import type { AvatarProps, AvatarVariant } from './types.js';
 
 export type { AvatarProps, AvatarVariant };
@@ -67,8 +68,22 @@ function vistars(props: AvatarProps = {}): string {
     variant = 'bar',
   } = props;
 
+  const safeColors = colors.length > 0 ? colors : DEFAULT_COLORS;
+
   const generator = VARIANT_GENERATORS[variant] ?? generateBar;
-  return generator({ name, colors, size, square, light });
+  let svg = generator({ name, colors: safeColors, size, square, light });
+
+  if (!square) {
+    const num = hashCode(name);
+    const clipId = `vc${num}`;
+    const tagEnd = svg.indexOf('>') + 1;
+    const inner = svg.slice(tagEnd, svg.lastIndexOf('</svg>'));
+    svg = svg.slice(0, tagEnd) +
+      `<defs><clipPath id="${clipId}"><circle cx="40" cy="40" r="40"/></clipPath></defs>` +
+      `<g clip-path="url(#${clipId})">${inner}</g></svg>`;
+  }
+
+  return svg;
 }
 
 export { vistars };

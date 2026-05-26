@@ -18,8 +18,8 @@ export function generateScatter({ name = '', colors = [], size = 40, light = fal
   }
 
   for (let i = 0; i < dotCount; i++) {
-    const xR = 0.05 + (getUnit(num + i * 17, 90, i) + 90) / 100 * 0.9;
-    const yR = 0.05 + (getUnit(num + i * 23, 90, (i + 3) % 10) + 90) / 100 * 0.9;
+    const xR = Math.min(Math.max(0.05 + (getUnit(num + i * 17, 90, i) + 90) / 100 * 0.9, 0), 1);
+    const yR = Math.min(Math.max(0.05 + (getUnit(num + i * 23, 90, (i + 3) % 10) + 90) / 100 * 0.9, 0), 1);
     const x = pad + xR * (S - pad * 2);
     const y = S - pad - yR * (S - pad * 2);
     const color = colors[(num + i * 7) % range];

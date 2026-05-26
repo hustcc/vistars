@@ -22,7 +22,7 @@ export function generateTreemap({ name = '', colors = [], size = 40, light = fal
   const row2A = areas.slice(mid).reduce((s, v) => s + v, 0);
   const totalW = S - pad * 2, totalH = S - pad * 2;
   const row1H = totalH * (row1A / (row1A + row2A)) - gap / 2;
-  const row2H = totalH - row1H - gap / 2;
+  const row2H = totalH - row1H - gap;
 
   interface Rect { x: number; y: number; w: number; h: number; color: string; i: number }
   const rects: Rect[] = [];

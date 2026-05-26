@@ -19,7 +19,7 @@ export function generateLiquid({ name = '', colors = [], size = 40, light = fals
   let inner = '';
   inner += `<circle cx="${cx}" cy="${cy}" r="${R + 2}" fill="none" stroke="rgba(${foreground},0.1)" stroke-width="1"/>`;
 
-  const clipId = `lc${num % 9999}`;
+  const clipId = `lc${num}`;
   inner += `<defs><clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath></defs>`;
   inner += `<g clip-path="url(#${clipId})">`;
 
