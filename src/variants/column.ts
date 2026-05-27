@@ -1,7 +1,7 @@
-import { hashCode, getUnit, bg, fg } from '../utilities.js';
+import { hashCode, getUnit, bg, fg, safeSvgLength } from '../utilities.js';
 import type { AvatarProps } from '../types.js';
 
-export function generateHBar({ name = '', colors = [], size = 40, light = false }: AvatarProps): string {
+export function generateColumn({ name = '', colors = [], size = 40, light = false }: AvatarProps): string {
   const num = hashCode(name);
   const range = colors.length;
   const S = 80;
@@ -29,5 +29,6 @@ export function generateHBar({ name = '', colors = [], size = 40, light = false 
 
   inner += `<line x1="${pad + 8}" y1="${pad}" x2="${pad + 8}" y2="${S - pad}" stroke="rgba(${foreground},0.1)" stroke-width="0.5"/>`;
 
-  return `<svg viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${S}" height="${S}" fill="${background}"/>${inner}</svg>`;
+  const safeSize = safeSvgLength(size);
+  return `<svg viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${safeSize}" height="${safeSize}"><rect width="${S}" height="${S}" fill="${background}"/>${inner}</svg>`;
 }

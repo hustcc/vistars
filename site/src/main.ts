@@ -1,7 +1,7 @@
 import vistars from 'vistars';
 import type { AvatarVariant } from 'vistars';
 import { exampleNames } from './example-names.js';
-import { getThemeName, resolveAvatarVariant } from './playground.js';
+import { avatarVariants, getThemeName, resolveAvatarVariant } from './playground.js';
 
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
@@ -20,6 +20,8 @@ const randomPaletteBtn = document.getElementById('random-palette') as HTMLButton
 const toggleSquareBtn = document.getElementById('toggle-square') as HTMLButtonElement;
 const toggleLightBtn = document.getElementById('toggle-light') as HTMLButtonElement;
 const avatarsGrid = document.getElementById('avatars-grid') as HTMLElement;
+const FAVICON_REFRESH_INTERVAL_MS = 10_000;
+let faviconIntervalId: number | undefined;
 
 const palettes: string[][] = [
   ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'],
@@ -34,9 +36,59 @@ const palettes: string[][] = [
   ['#F94144', '#F3722C', '#F8961E', '#F9C74F', '#90BE6D'],
 ];
 
-function getRandomPalette(): string[] {
-  return palettes[Math.floor(Math.random() * palettes.length)];
+function randomItem<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
 }
+
+function getRandomPalette(): string[] {
+  return randomItem(palettes);
+}
+
+function getFaviconLink(): HTMLLinkElement {
+  const existing = document.querySelector('link[rel~="icon"]');
+  if (existing instanceof HTMLLinkElement) return existing;
+
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/svg+xml';
+  document.head.appendChild(link);
+  return link;
+}
+
+function updateRandomFavicon() {
+  const name = randomItem(exampleNames);
+  const variant = randomItem(avatarVariants);
+  const svg = vistars({
+    name,
+    variant,
+    colors: getRandomPalette(),
+    size: 64,
+    square: true,
+    light: state.light,
+  });
+
+  getFaviconLink().href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function startFaviconRefresh() {
+  if (faviconIntervalId !== undefined) return;
+  updateRandomFavicon();
+  faviconIntervalId = window.setInterval(updateRandomFavicon, FAVICON_REFRESH_INTERVAL_MS);
+}
+
+function stopFaviconRefresh() {
+  if (faviconIntervalId === undefined) return;
+  window.clearInterval(faviconIntervalId);
+  faviconIntervalId = undefined;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopFaviconRefresh();
+    return;
+  }
+  startFaviconRefresh();
+});
 
 function updateUI() {
   document.documentElement.dataset.theme = getThemeName(state.light);
@@ -133,6 +185,7 @@ randomPaletteBtn.addEventListener('click', () => {
   state.colors = getRandomPalette();
   updateUI();
   renderAvatars();
+  startFaviconRefresh();
 });
 
 toggleSquareBtn.addEventListener('click', () => {

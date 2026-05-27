@@ -28,5 +28,10 @@ export const normalizeSize = (size: number | string | undefined): string => {
   return size;
 };
 
+export const safeSvgLength = (size: number | string | undefined): number => {
+  const value = typeof size === 'number' ? size : Number(size);
+  return Number.isFinite(value) && value > 0 ? value : 40;
+};
+
 export const bg = (light: boolean): string => light ? '#f1f5f9' : '#141824';
 export const fg = (light: boolean): string => light ? '0,0,0' : '255,255,255';

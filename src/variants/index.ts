@@ -1,14 +1,13 @@
 export { generateBar } from './bar.js';
 export { generateDonut } from './donut.js';
 export { generateRadar } from './radar.js';
-export { generateSparkline } from './sparkline.js';
 export { generateHeatmap } from './heatmap.js';
 export { generateTreemap } from './treemap.js';
 export { generateBoxplot } from './boxplot.js';
 export { generateLine } from './line.js';
 export { generatePie } from './pie.js';
 export { generateArea } from './area.js';
-export { generateHBar } from './hbar.js';
+export { generateColumn } from './column.js';
 export { generateScatter } from './scatter.js';
 export { generateFunnel } from './funnel.js';
 export { generateLiquid } from './liquid.js';
