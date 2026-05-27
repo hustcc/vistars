@@ -28,5 +28,16 @@ export const normalizeSize = (size: number | string | undefined): string => {
   return size;
 };
 
+export const safeSvgLength = (size: number | string | undefined): string => {
+  if (typeof size === 'number' && Number.isFinite(size) && size > 0) return `${size}`;
+  if (typeof size === 'string') {
+    const value = size.trim();
+    if (/^\d*\.?\d+(px|em|rem|%|vh|vw|vmin|vmax|pt|pc|cm|mm|in|ch|ex)?$/i.test(value)) {
+      return value;
+    }
+  }
+  return '40';
+};
+
 export const bg = (light: boolean): string => light ? '#f1f5f9' : '#141824';
 export const fg = (light: boolean): string => light ? '0,0,0' : '255,255,255';
