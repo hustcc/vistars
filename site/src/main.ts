@@ -1,7 +1,7 @@
 import vistars from 'vistars';
 import type { AvatarVariant } from 'vistars';
 import { exampleNames } from './example-names.js';
-import { getThemeName, resolveAvatarVariant } from './playground.js';
+import { avatarVariants, getThemeName, resolveAvatarVariant } from './playground.js';
 
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
@@ -34,8 +34,38 @@ const palettes: string[][] = [
   ['#F94144', '#F3722C', '#F8961E', '#F9C74F', '#90BE6D'],
 ];
 
+function randomItem<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
 function getRandomPalette(): string[] {
-  return palettes[Math.floor(Math.random() * palettes.length)];
+  return randomItem(palettes);
+}
+
+function getFaviconLink(): HTMLLinkElement {
+  const existing = document.querySelector('link[rel~="icon"]');
+  if (existing instanceof HTMLLinkElement) return existing;
+
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/svg+xml';
+  document.head.appendChild(link);
+  return link;
+}
+
+function updateRandomFavicon() {
+  const name = randomItem(exampleNames);
+  const variant = randomItem(avatarVariants) as AvatarVariant;
+  const svg = vistars({
+    name,
+    variant,
+    colors: getRandomPalette(),
+    size: 64,
+    square: true,
+    light: state.light,
+  });
+
+  getFaviconLink().href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 function updateUI() {
@@ -110,6 +140,8 @@ variantSelector.querySelectorAll('.segment').forEach((btn) => {
     state.variant = btn.getAttribute('data-variant') as AvatarVariant | 'random';
     updateUI();
     renderAvatars();
+    updateRandomFavicon();
+    setInterval(updateRandomFavicon, 10_000);
   });
 });
 
