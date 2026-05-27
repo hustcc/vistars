@@ -55,7 +55,7 @@ function getFaviconLink(): HTMLLinkElement {
 
 function updateRandomFavicon() {
   const name = randomItem(exampleNames);
-  const variant = randomItem(avatarVariants) as AvatarVariant;
+  const variant = randomItem(avatarVariants);
   const svg = vistars({
     name,
     variant,
@@ -140,8 +140,6 @@ variantSelector.querySelectorAll('.segment').forEach((btn) => {
     state.variant = btn.getAttribute('data-variant') as AvatarVariant | 'random';
     updateUI();
     renderAvatars();
-    updateRandomFavicon();
-    setInterval(updateRandomFavicon, 10_000);
   });
 });
 
@@ -150,6 +148,8 @@ sizeSelector.querySelectorAll('.segment').forEach((btn) => {
     state.size = parseInt(btn.getAttribute('data-size')!);
     updateUI();
     renderAvatars();
+    updateRandomFavicon();
+    setInterval(updateRandomFavicon, 10_000);
   });
 });
 
