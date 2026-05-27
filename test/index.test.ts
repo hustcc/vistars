@@ -105,6 +105,20 @@ describe('vistars', () => {
       expect(matchSnapshot('variant-pie', svg)).toBe(true);
     });
 
+    it('should not render center ellipse in pie variant', () => {
+      const svg = vistars({ variant: 'pie', colors: TEST_COLORS });
+      expect(svg).not.toContain('<ellipse');
+    });
+
+    it('should explode one deterministic pie slice without separator strokes', () => {
+      const svg = vistars({ variant: 'pie', colors: TEST_COLORS });
+      expect(svg).not.toContain('<line');
+      expect(svg).not.toContain('stroke-linejoin="round"');
+      expect(svg).not.toContain('stroke-linecap="round"');
+      expect(svg).toMatch(/<path d="M40,39 /);
+      expect(svg).toMatch(/<path d="M(?!40,39 )/);
+    });
+
     it('should generate area variant', () => {
       const svg = vistars({ variant: 'area', colors: TEST_COLORS });
       expect(matchSnapshot('variant-area', svg)).toBe(true);
