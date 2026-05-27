@@ -19,23 +19,39 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
     raw.push(v); total += v;
   }
 
-  let inner = '';
+  const sliceSegments: {
+    start: number;
+    end: number;
+    color: string;
+    offsetX: number;
+    offsetY: number;
+  }[] = [];
   let angle = -90;
-
-  // 3D side rim
   for (let i = 0; i < slices; i++) {
     const sweep = (raw[i] / total) * 360;
-    const endAngle = angle + sweep;
-    const color = colors[(num + i * 3) % range];
+    const end = angle + sweep;
     const midAngleRad = (angle + sweep / 2) * Math.PI / 180;
     const offset = i === explodedSlice ? explodedOffset : 0;
-    const offsetX = Math.cos(midAngleRad) * offset;
-    const offsetY = Math.sin(midAngleRad) * offset;
+    sliceSegments.push({
+      start: angle,
+      end,
+      color: colors[(num + i * 3) % range],
+      offsetX: Math.cos(midAngleRad) * offset,
+      offsetY: Math.sin(midAngleRad) * offset,
+    });
+    angle = end;
+  }
+
+  let inner = '';
+
+  // 3D side rim
+  for (const segment of sliceSegments) {
+    const { start, end, color, offsetX, offsetY } = segment;
     const step = 3;
-    if (endAngle > angle) {
-      for (let a = angle; a < endAngle; a += step) {
+    if (end > start) {
+      for (let a = start; a < end; a += step) {
         const aRad = a * Math.PI / 180;
-        const nextRad = Math.min(a + step, endAngle) * Math.PI / 180;
+        const nextRad = Math.min(a + step, end) * Math.PI / 180;
         if (Math.sin(aRad) > 0.05 || Math.sin(nextRad) > 0.05) {
           const x0 = cx + Math.cos(aRad) * R + offsetX, y0 = cy + Math.sin(aRad) * R + offsetY;
           const x1 = cx + Math.cos(nextRad) * R + offsetX, y1 = cy + Math.sin(nextRad) * R + offsetY;
@@ -43,27 +59,19 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
         }
       }
     }
-    angle = endAngle;
   }
 
   // Top face
-  angle = -90;
-  for (let i = 0; i < slices; i++) {
-    const sweep = (raw[i] / total) * 360;
-    const endAngle = angle + sweep;
-    const color = colors[(num + i * 3) % range];
-    const midAngleRad = (angle + sweep / 2) * Math.PI / 180;
-    const offset = i === explodedSlice ? explodedOffset : 0;
-    const offsetX = Math.cos(midAngleRad) * offset;
-    const offsetY = Math.sin(midAngleRad) * offset;
-    const rad0 = angle * Math.PI / 180, rad1 = endAngle * Math.PI / 180;
+  for (const segment of sliceSegments) {
+    const { start, end, color, offsetX, offsetY } = segment;
+    const sweep = end - start;
+    const rad0 = start * Math.PI / 180, rad1 = end * Math.PI / 180;
     const x0 = cx + Math.cos(rad0) * R + offsetX, y0 = cy + Math.sin(rad0) * R + offsetY;
     const x1 = cx + Math.cos(rad1) * R + offsetX, y1 = cy + Math.sin(rad1) * R + offsetY;
     const centerX = +(cx + offsetX).toFixed(1);
     const centerY = +(cy + offsetY).toFixed(1);
     const largeArc = sweep > 180 ? 1 : 0;
     inner += `<path d="M${centerX},${centerY} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 ${largeArc} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${color}" opacity="0.9"/>`;
-    angle = endAngle;
   }
 
   return `<svg viewBox="0 0 ${S} ${S}" fill="none" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${S}" height="${S}" fill="${background}"/>${inner}</svg>`;
