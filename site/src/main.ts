@@ -148,8 +148,6 @@ sizeSelector.querySelectorAll('.segment').forEach((btn) => {
     state.size = parseInt(btn.getAttribute('data-size')!);
     updateUI();
     renderAvatars();
-    updateRandomFavicon();
-    setInterval(updateRandomFavicon, 10_000);
   });
 });
 
@@ -165,6 +163,8 @@ randomPaletteBtn.addEventListener('click', () => {
   state.colors = getRandomPalette();
   updateUI();
   renderAvatars();
+  updateRandomFavicon();
+  setInterval(updateRandomFavicon, 10_000);
 });
 
 toggleSquareBtn.addEventListener('click', () => {
