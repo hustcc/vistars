@@ -76,10 +76,18 @@ function startFaviconRefresh() {
   faviconIntervalId = window.setInterval(updateRandomFavicon, FAVICON_REFRESH_INTERVAL_MS);
 }
 
-window.addEventListener('beforeunload', () => {
+function stopFaviconRefresh() {
   if (faviconIntervalId === undefined) return;
   window.clearInterval(faviconIntervalId);
   faviconIntervalId = undefined;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopFaviconRefresh();
+    return;
+  }
+  startFaviconRefresh();
 });
 
 function updateUI() {
