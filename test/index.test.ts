@@ -75,11 +75,6 @@ describe('vistars', () => {
       expect(matchSnapshot('variant-radar', svg)).toBe(true);
     });
 
-    it('should generate sparkline variant', () => {
-      const svg = vistars({ variant: 'sparkline', colors: TEST_COLORS });
-      expect(matchSnapshot('variant-sparkline', svg)).toBe(true);
-    });
-
     it('should generate heatmap variant', () => {
       const svg = vistars({ variant: 'heatmap', colors: TEST_COLORS });
       expect(matchSnapshot('variant-heatmap', svg)).toBe(true);
@@ -124,9 +119,9 @@ describe('vistars', () => {
       expect(matchSnapshot('variant-area', svg)).toBe(true);
     });
 
-    it('should generate hbar variant', () => {
-      const svg = vistars({ variant: 'hbar', colors: TEST_COLORS });
-      expect(matchSnapshot('variant-hbar', svg)).toBe(true);
+    it('should generate column variant', () => {
+      const svg = vistars({ variant: 'column', colors: TEST_COLORS });
+      expect(matchSnapshot('variant-column', svg)).toBe(true);
     });
 
     it('should generate scatter variant', () => {

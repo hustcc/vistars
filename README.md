@@ -37,7 +37,7 @@ fs.writeFileSync('avatar.svg', svg);
 | Prop      | Type                                                         | Default     |
 |-----------|--------------------------------------------------------------|-------------|
 | name      | string                                                       | `Clara Barton` |
-| variant   | `bar` \| `donut` \| `radar` \| `sparkline` \| `heatmap` \| `treemap` \| `boxplot` \| `line` \| `pie` \| `area` \| `hbar` \| `scatter` \| `funnel` \| `liquid` \| `venn` | `bar` |
+| variant   | `bar` \| `donut` \| `radar` \| `line` \| `heatmap` \| `treemap` \| `boxplot` \| `pie` \| `area` \| `column` \| `scatter` \| `funnel` \| `liquid` \| `venn` | `bar` |
 | colors    | string[]                                                     | `['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899']` |
 | size      | number \| string                                             | `40`        |
 | square    | boolean                                                      | `false`     |

@@ -1,7 +1,7 @@
 import { hashCode, getUnit, bg, fg } from '../utilities.js';
 import type { AvatarProps } from '../types.js';
 
-export function generateHBar({ name = '', colors = [], size = 40, light = false }: AvatarProps): string {
+export function generateColumn({ name = '', colors = [], size = 40, light = false }: AvatarProps): string {
   const num = hashCode(name);
   const range = colors.length;
   const S = 80;
