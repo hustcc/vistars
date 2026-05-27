@@ -1,6 +1,11 @@
 # vistars
 
-SVG-based data visualization style avatars from any username and color palette. Works in both browsers and Node.js.
+👾🎨 SVG-based data visualization style avatars from any username and color palette. Works in both browsers and Node.js.
+
+<p align="center">
+  <img width="1024" alt="vistars preview" src="https://github.com/user-attachments/assets/a25bb669-0342-402d-9535-1a58c147945f" />  
+</p>
+
 
 ## Install
 
