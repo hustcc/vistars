@@ -20,6 +20,7 @@ const randomPaletteBtn = document.getElementById('random-palette') as HTMLButton
 const toggleSquareBtn = document.getElementById('toggle-square') as HTMLButtonElement;
 const toggleLightBtn = document.getElementById('toggle-light') as HTMLButtonElement;
 const avatarsGrid = document.getElementById('avatars-grid') as HTMLElement;
+let faviconIntervalId: number | undefined;
 
 const palettes: string[][] = [
   ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'],
@@ -66,6 +67,12 @@ function updateRandomFavicon() {
   });
 
   getFaviconLink().href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function startFaviconRefresh() {
+  if (faviconIntervalId !== undefined) return;
+  updateRandomFavicon();
+  faviconIntervalId = window.setInterval(updateRandomFavicon, 10_000);
 }
 
 function updateUI() {
@@ -163,8 +170,7 @@ randomPaletteBtn.addEventListener('click', () => {
   state.colors = getRandomPalette();
   updateUI();
   renderAvatars();
-  updateRandomFavicon();
-  setInterval(updateRandomFavicon, 10_000);
+  startFaviconRefresh();
 });
 
 toggleSquareBtn.addEventListener('click', () => {
