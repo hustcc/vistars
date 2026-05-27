@@ -8,7 +8,7 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
   const background = bg(light);
   const cx = S / 2, cy = S / 2 - 1, R = 28;
   const depth = 2.5;
-  const separatorGap = 1.2;
+  const separatorGapDegrees = 1.2;
   const slices = 3 + num % 3;
 
   const raw: number[] = [];
@@ -25,7 +25,8 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
   for (let i = 0; i < slices; i++) {
     const sweep = (raw[i] / total) * 360;
     const endAngle = angle + sweep;
-    const gap = Math.min(separatorGap, sweep * 0.6);
+    // Clamp to 60% of slice sweep so very small slices still retain visible area.
+    const gap = Math.min(separatorGapDegrees, sweep * 0.6);
     const startAngle = angle + gap / 2;
     const visibleEndAngle = endAngle - gap / 2;
     const color = colors[(num + i * 3) % range];
@@ -49,7 +50,8 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
   for (let i = 0; i < slices; i++) {
     const sweep = (raw[i] / total) * 360;
     const endAngle = angle + sweep;
-    const gap = Math.min(separatorGap, sweep * 0.6);
+    // Keep top-face geometry in sync with side rim gap clamping.
+    const gap = Math.min(separatorGapDegrees, sweep * 0.6);
     const startAngle = angle + gap / 2;
     const visibleEndAngle = endAngle - gap / 2;
     const color = colors[(num + i * 3) % range];
