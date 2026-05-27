@@ -20,6 +20,7 @@ const randomPaletteBtn = document.getElementById('random-palette') as HTMLButton
 const toggleSquareBtn = document.getElementById('toggle-square') as HTMLButtonElement;
 const toggleLightBtn = document.getElementById('toggle-light') as HTMLButtonElement;
 const avatarsGrid = document.getElementById('avatars-grid') as HTMLElement;
+const FAVICON_REFRESH_INTERVAL_MS = 10_000;
 let faviconIntervalId: number | undefined;
 
 const palettes: string[][] = [
@@ -72,8 +73,14 @@ function updateRandomFavicon() {
 function startFaviconRefresh() {
   if (faviconIntervalId !== undefined) return;
   updateRandomFavicon();
-  faviconIntervalId = window.setInterval(updateRandomFavicon, 10_000);
+  faviconIntervalId = window.setInterval(updateRandomFavicon, FAVICON_REFRESH_INTERVAL_MS);
 }
+
+window.addEventListener('beforeunload', () => {
+  if (faviconIntervalId === undefined) return;
+  window.clearInterval(faviconIntervalId);
+  faviconIntervalId = undefined;
+});
 
 function updateUI() {
   document.documentElement.dataset.theme = getThemeName(state.light);
