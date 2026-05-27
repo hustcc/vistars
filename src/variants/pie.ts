@@ -10,7 +10,7 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
   const depth = 2.5;
   const slices = 3 + num % 3;
   const explodedSlice = num % slices;
-  const explodedOffset = 2.8;
+  const explodedOffset = 1.8;
 
   const raw: number[] = [];
   let total = 0;
