@@ -110,10 +110,11 @@ describe('vistars', () => {
       expect(svg).not.toContain('<ellipse');
     });
 
-    it('should use path stroke separators for consistent pie gaps', () => {
+    it('should use rounded radial separators for pie gaps', () => {
       const svg = vistars({ variant: 'pie', colors: TEST_COLORS });
-      expect(svg).not.toContain('<line');
-      expect(svg).toContain('stroke-linejoin="round"');
+      expect(svg).toContain('<line');
+      expect(svg).toContain('stroke-linecap="round"');
+      expect(svg).not.toContain('stroke-linejoin="round"');
     });
 
     it('should generate area variant', () => {
