@@ -48,8 +48,7 @@ export function generatePie({ name = '', colors = [], size = 40, light = false }
     const x0 = cx + Math.cos(rad0) * R, y0 = cy + Math.sin(rad0) * R;
     const x1 = cx + Math.cos(rad1) * R, y1 = cy + Math.sin(rad1) * R;
     const largeArc = sweep > 180 ? 1 : 0;
-    inner += `<path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 ${largeArc} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${color}" opacity="0.9"/>`;
-    inner += `<line x1="${cx}" y1="${cy}" x2="${x0.toFixed(1)}" y2="${y0.toFixed(1)}" stroke="${background}" stroke-width="1.2"/>`;
+    inner += `<path d="M${cx},${cy} L${x0.toFixed(1)},${y0.toFixed(1)} A${R},${R} 0 ${largeArc} 1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${color}" opacity="0.9" stroke="${background}" stroke-width="1.2" stroke-linejoin="round"/>`;
     angle = endAngle;
   }
 
