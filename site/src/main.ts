@@ -6,7 +6,7 @@ import { avatarVariants, getThemeName, resolveAvatarVariant } from './playground
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
 let state = {
-  variant: 'bar' as AvatarVariant | 'random',
+  variant: 'random' as AvatarVariant | 'random',
   colors: [...defaultPalette],
   size: 80,
   square: false,
