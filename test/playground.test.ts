@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { avatarVariants, getThemeName, resolveAvatarVariant } from '../site/src/playground.js';
+import { avatarVariants, defaultPlaygroundVariant, getThemeName, resolveAvatarVariant } from '../site/src/playground.js';
 
 describe('site playground helpers', () => {
   it('keeps explicit variants unchanged', () => {
     expect(resolveAvatarVariant('bar', 'Alice', 0)).toBe('bar');
+  });
+
+  it('defaults the site playground to the random variant', () => {
+    expect(defaultPlaygroundVariant).toBe('random');
   });
 
   it('maps light mode to the matching site theme', () => {
