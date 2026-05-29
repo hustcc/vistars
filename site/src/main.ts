@@ -1,12 +1,12 @@
 import vistars from 'vistars';
 import type { AvatarVariant } from 'vistars';
 import { exampleNames } from './example-names.js';
-import { avatarVariants, getThemeName, resolveAvatarVariant } from './playground.js';
+import { avatarVariants, defaultPlaygroundVariant, getThemeName, resolveAvatarVariant } from './playground.js';
 
 const defaultPalette = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ec4899'];
 
 let state = {
-  variant: 'bar' as AvatarVariant | 'random',
+  variant: defaultPlaygroundVariant as AvatarVariant | 'random',
   colors: [...defaultPalette],
   size: 80,
   square: false,

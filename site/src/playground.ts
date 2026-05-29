@@ -18,6 +18,7 @@ export const avatarVariants: AvatarVariant[] = [
 ];
 
 export type PlaygroundVariant = AvatarVariant | 'random';
+export const defaultPlaygroundVariant: PlaygroundVariant = 'random';
 
 export function getThemeName(light: boolean): 'light' | 'dark' {
   return light ? 'light' : 'dark';
