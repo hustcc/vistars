@@ -1,6 +1,6 @@
 {
   "name": "vistars",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SVG-based data visualization style avatars from any username and color palette. Works in both browsers and Node.js.",
   "type": "module",
   "main": "./dist/index.cjs",
