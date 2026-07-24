@@ -3,7 +3,7 @@ name: Publish Package
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 # OIDC Trusted Publishing 需要以下权限
 # - id-token: write - 允许 GitHub Actions 生成 OIDC token
