@@ -38,6 +38,8 @@ const VARIANT_GENERATORS: Record<AvatarVariant, (props: AvatarProps) => string> 
   venn:      generateVenn,
 };
 
+const VARIANT_KEYS = Object.keys(VARIANT_GENERATORS) as AvatarVariant[];
+
 /**
  * Generate a data visualization style SVG avatar
  * @param props - Avatar configuration options
@@ -63,12 +65,14 @@ function vistars(props: AvatarProps = {}): string {
     size = 40,
     square = false,
     light = false,
-    variant = 'bar',
+    variant,
   } = props;
 
   const safeColors = colors.length > 0 ? colors : DEFAULT_COLORS;
 
-  const generator = VARIANT_GENERATORS[variant] ?? generateBar;
+  const hash = hashCode(name);
+  const resolvedVariant = variant ?? VARIANT_KEYS[hash % VARIANT_KEYS.length];
+  const generator = VARIANT_GENERATORS[resolvedVariant] ?? generateBar;
   let svg = generator({ name, colors: safeColors, size, square, light });
 
   if (!square) {
